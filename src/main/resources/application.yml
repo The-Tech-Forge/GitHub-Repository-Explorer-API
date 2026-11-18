@@ -21,3 +21,11 @@ spring:
 
   flyway:
     enabled: true
+
+  github:
+    api:
+      base-url: ${GITHUB_API_BASE_URL}
+      token: ${GITHUB_API_TOKEN:}
+
+  jackson:
+    property-naming-strategy: SNAKE_CASE
