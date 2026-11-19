@@ -53,24 +53,45 @@ public class GithubRepositoryService {
         );
 
         String sort = request.getSort().name().toLowerCase();
-        GithubSearchApiResponse githubSearchApiResponse = githubApiClient.searchRepositories(searchQuery, sort);
 
-//        // Handle empty results
-//        if (githubSearchApiResponse == null || githubSearchApiResponse.getItems() == null
-//                || githubSearchApiResponse.getItems().isEmpty()) {
-//            return githubSearchApiResponse;
-//        }
+        GithubSearchApiResponse githubSearchApiResponse =
+                githubApiClient.searchRepositories(searchQuery, sort);
 
-        List<GithubRepositoryResponse> repositories = githubSearchApiResponse.getItems()
-                .stream()
-                .map(githubRepositoryMapper::toResponse)
-                .toList();
+        // Handle empty results
+        if (githubSearchApiResponse == null
+                || githubSearchApiResponse.getItems() == null
+                || githubSearchApiResponse.getItems().isEmpty()) {
+
+            GithubSearchResponse emptyResponse = new GithubSearchResponse();
+            emptyResponse.setMessage("No repositories found");
+            emptyResponse.setRepositories(List.of());
+
+            return emptyResponse;
+        }
+
+        // Convert GitHub DTOs into database entities
+        List<GithubRepositoryEntity> entities =
+                githubSearchApiResponse.getItems()
+                        .stream()
+                        .map(githubRepositoryMapper::toEntity)
+                        .toList();
+
+        // Save or update repositories
+        githubRepositoryBulkWriter.upsertAll(entities);
+
+        // Convert GitHub DTOs into API response DTOs
+        List<GithubRepositoryResponse> repositories =
+                githubSearchApiResponse.getItems()
+                        .stream()
+                        .map(githubRepositoryMapper::toResponse)
+                        .toList();
 
         GithubSearchResponse searchResponse = new GithubSearchResponse();
 
         searchResponse.setMessage(
                 "Repositories fetched and saved successfully"
         );
+
         searchResponse.setRepositories(repositories);
 
         return searchResponse;

@@ -71,9 +71,15 @@
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
+
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
-    <build>This keeps plugin versions compatible with our Spring Boot version.
+    <build>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
