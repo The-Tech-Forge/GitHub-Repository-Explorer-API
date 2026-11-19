@@ -16,12 +16,12 @@ public class GithubApiClient {
         this.restClient = restClientBuilder.baseUrl(baseUrl).build();
     }
 
-    public GithubSearchApiResponse searchRepositories(String query) {
+    public GithubSearchApiResponse searchRepositories(String query, String sort) {
         return restClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/search/repositories")
                         .queryParam("q", query)
-                        .queryParam("sort", "stars")
+                        .queryParam("sort", sort)
                         .queryParam("order", "desc")
                         .build())
                 .retrieve()
