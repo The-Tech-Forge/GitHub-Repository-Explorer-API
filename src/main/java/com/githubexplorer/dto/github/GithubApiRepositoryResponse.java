@@ -1,7 +1,10 @@
 package com.githubexplorer.dto.github;
 
+import lombok.Getter;
+
 import java.time.OffsetDateTime;
 
+@Getter
 public class GithubApiRepositoryResponse {
     private Long id;
     private String name;
