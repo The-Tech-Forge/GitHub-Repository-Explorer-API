@@ -1,0 +1,47 @@
+services:
+
+  postgres:
+    image: postgres:18
+    container_name: github-explorer-db
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+    volumes:
+      - postgres_data:/var/lib/postgresql
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    image: github-explorer:1.0
+    container_name: github-explorer-app
+    restart: unless-stopped
+
+    ports:
+      - "8081:8080"
+
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      GITHUB_API_BASE_URL: https://api.github.com
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+
+volumes:
+  postgres_data:

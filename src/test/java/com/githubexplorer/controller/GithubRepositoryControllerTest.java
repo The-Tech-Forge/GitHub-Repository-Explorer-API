@@ -247,4 +247,27 @@ class GithubRepositoryControllerTest {
 
         verifyNoInteractions(githubRepositoryService);
     }
+
+    @Test
+    void shouldReturnInternalServerErrorWhenUnexpectedExceptionOccurs() throws Exception {
+
+        when(githubRepositoryService.searchRepositories(any(GithubSearchRequest.class)))
+                .thenThrow(new RuntimeException("Simulated unexpected error"));
+
+        mockMvc.perform(post("/api/github/search")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                                "query": "spring boot",
+                                "language": "Java",
+                                "sort": "stars"
+                            }
+                            """))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.status").value(500))
+                .andExpect(jsonPath("$.error").value("Internal Server Error"))
+                .andExpect(jsonPath("$.message")
+                        .value("An unexpected error occurred"))
+                .andExpect(jsonPath("$.path").value("/api/github/search"));
+    }
 }
