@@ -58,13 +58,12 @@ cd GitHub-Repository-Explorer-API
 
 ### 2. Configure Environment Variables
 
-Create a `.env.properties` file in the project root:
+Create a `.env` file in the project root:
 
 ```env
 POSTGRES_DB=github_explorer
 POSTGRES_USER=github_explorer
 POSTGRES_PASSWORD=your_secure_password
-GITHUB_API_BASE_URL=https://api.github.com
 ```
 
 Do not commit this file or expose your database credentials.
@@ -258,4 +257,83 @@ GET /api/github/repositories?language=Java&minStars=1000&sort=stars
 }
 ```
 
-The endpoint
+The endpoint returns repository information matching the supplied filters and sorting criteria.
+
+## Database Management
+
+The application uses PostgreSQL for persistent storage.
+
+Flyway manages database schema changes through version-controlled migration scripts.
+
+Migration scripts are located in:
+
+```text
+src/main/resources/db/migration/
+```
+
+For example:
+
+```text
+V1__create_github_repositories.sql
+```
+
+Pending migrations are automatically executed when the application starts.
+
+Hibernate is configured with:
+
+```yaml
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+```
+
+This ensures Hibernate validates the database schema rather than automatically modifying it.
+
+## Running Tests
+
+Execute the test suite using Maven:
+
+```bash
+./mvnw test
+```
+
+Or:
+
+```bash
+mvn test
+```
+
+## Environment Variables
+
+The application supports the following environment variables:
+
+| Variable | Required | Description |
+|---|---|---|
+| DB_URL | Yes | PostgreSQL JDBC connection URL |
+| DB_USERNAME | Yes | Database username |
+| DB_PASSWORD | Yes | Database password |
+| GITHUB_API_BASE_URL | Yes | GitHub API base URL |
+| GITHUB_API_TOKEN | No | GitHub Personal Access Token |
+| PORT | No | Application port; defaults to 8080 |
+
+## Deployment
+
+The application is deployed on Render using Docker.
+
+- Spring Boot application runs as a Render Web Service.
+- PostgreSQL is hosted using Render Managed PostgreSQL.
+- Database credentials are configured through environment variables.
+- Flyway manages database migrations during startup.
+
+**Live API:** https://github-repository-explorer-api.onrender.com
+
+**Swagger Documentation:** https://github-repository-explorer-api.onrender.com/swagger-ui/index.html
+
+---
+
+## Author
+
+**Abhishek Bhoyar**
+
+GitHub: [The-Tech-Forge](https://github.com/The-Tech-Forge)
