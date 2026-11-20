@@ -96,4 +96,31 @@ class GithubRepositoryMapperTest {
         assertEquals(200, response.getForks());
         assertEquals(updatedAt, response.getLastUpdated());
     }
+
+    @Test
+    void shouldMapEntityToResponseDto() {
+        GithubRepositoryEntity entity = new GithubRepositoryEntity();
+        entity.setId(101L);
+        entity.setName("spring-boot");
+        entity.setDescription("Spring Boot Framework");
+        entity.setOwnerName("spring-projects");
+        entity.setLanguage("Java");
+        entity.setStars(500);
+        entity.setForks(200);
+
+        OffsetDateTime lastUpdated = OffsetDateTime.now();
+        entity.setLastUpdated(lastUpdated);
+
+        GithubRepositoryResponse response =
+                mapper.toResponse(entity);
+
+        assertEquals(entity.getId(), response.getId());
+        assertEquals(entity.getName(), response.getName());
+        assertEquals(entity.getDescription(), response.getDescription());
+        assertEquals(entity.getOwnerName(), response.getOwner());
+        assertEquals(entity.getLanguage(), response.getLanguage());
+        assertEquals(entity.getStars(), response.getStars());
+        assertEquals(entity.getForks(), response.getForks());
+        assertEquals(lastUpdated, response.getLastUpdated());
+    }
 }

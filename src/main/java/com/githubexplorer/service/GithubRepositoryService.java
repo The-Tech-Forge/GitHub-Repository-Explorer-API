@@ -6,11 +6,12 @@ import com.githubexplorer.dto.request.GithubSearchRequest;
 import com.githubexplorer.dto.response.GithubRepositoryResponse;
 import com.githubexplorer.dto.response.GithubSearchResponse;
 import com.githubexplorer.entity.GithubRepositoryEntity;
+import com.githubexplorer.enums.RepositorySortType;
 import com.githubexplorer.mapper.GithubRepositoryMapper;
 import com.githubexplorer.repository.GithubRepositoryBulkWriter;
 import com.githubexplorer.repository.GithubRepositoryRepository;
 import org.springframework.stereotype.Service;
-
+import org.springframework.data.domain.Sort;
 import java.util.List;
 
 @Service
@@ -95,5 +96,28 @@ public class GithubRepositoryService {
         searchResponse.setRepositories(repositories);
 
         return searchResponse;
+    }
+
+    public List<GithubRepositoryResponse> getRepositories(
+            String language,
+            Integer minStars,
+            RepositorySortType sortType
+    ) {
+        String sortField = switch (sortType) {
+            case STARS -> "stars";
+            case FORKS -> "forks";
+            case UPDATED -> "lastUpdated";
+        };
+
+        List<GithubRepositoryEntity> repositories =
+                githubRepositoryRepository.findByFilters(
+                        language,
+                        minStars,
+                        Sort.by(Sort.Direction.DESC, sortField)
+                );
+
+        return repositories.stream()
+                .map(githubRepositoryMapper::toResponse)
+                .toList();
     }
 }

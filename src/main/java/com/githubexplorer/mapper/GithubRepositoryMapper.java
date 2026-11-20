@@ -40,4 +40,19 @@ public class GithubRepositoryMapper {
 
         return repositoryResponse;
     }
+
+    public GithubRepositoryResponse toResponse(GithubRepositoryEntity entity) {
+        GithubRepositoryResponse response = new GithubRepositoryResponse();
+
+        response.setId(entity.getId());
+        response.setName(entity.getName());
+        response.setDescription(entity.getDescription());
+        response.setOwner(entity.getOwnerName());
+        response.setLanguage(entity.getLanguage());
+        response.setStars(entity.getStars());
+        response.setForks(entity.getForks());
+        response.setLastUpdated(entity.getLastUpdated());
+
+        return response;
+    }
 }

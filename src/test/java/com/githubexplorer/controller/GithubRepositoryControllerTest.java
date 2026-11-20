@@ -14,6 +14,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.mockito.Mockito.verifyNoInteractions;
 import org.springframework.web.client.ResourceAccessException;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.mockito.Mockito.verify;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -158,5 +160,91 @@ class GithubRepositoryControllerTest {
                 .andExpect(jsonPath("$.message")
                         .value("Unable to communicate with GitHub API"))
                 .andExpect(jsonPath("$.path").value("/api/github/search"));
+    }
+
+    @Test
+    void shouldReturnRepositoriesWithFilters() throws Exception {
+
+        // Arrange
+        GithubRepositoryResponse repository = new GithubRepositoryResponse();
+        repository.setId(123L);
+        repository.setName("spring-boot");
+        repository.setOwner("spring-projects");
+        repository.setLanguage("Java");
+        repository.setStars(500);
+        repository.setForks(200);
+
+        when(githubRepositoryService.getRepositories(
+                "Java",
+                100,
+                RepositorySortType.FORKS
+        )).thenReturn(List.of(repository));
+
+        // Act & Assert
+        mockMvc.perform(get("/api/github/repositories")
+                        .param("language", "Java")
+                        .param("minStars", "100")
+                        .param("sort", "forks"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(123))
+                .andExpect(jsonPath("$[0].name").value("spring-boot"))
+                .andExpect(jsonPath("$[0].language").value("Java"))
+                .andExpect(jsonPath("$[0].stars").value(500));
+
+        verify(githubRepositoryService).getRepositories(
+                "Java",
+                100,
+                RepositorySortType.FORKS
+        );
+    }
+
+    @Test
+    void shouldUseStarsAsDefaultSort() throws Exception {
+
+        // Arrange
+        when(githubRepositoryService.getRepositories(
+                null,
+                null,
+                RepositorySortType.STARS
+        )).thenReturn(List.of());
+
+        // Act & Assert
+        mockMvc.perform(get("/api/github/repositories"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(0));
+
+        verify(githubRepositoryService).getRepositories(
+                null,
+                null,
+                RepositorySortType.STARS
+        );
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenGetSortIsInvalid() throws Exception {
+
+        mockMvc.perform(get("/api/github/repositories")
+                        .param("sort", "popularity"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("Bad Request"))
+                .andExpect(jsonPath("$.message")
+                        .value("Invalid request parameter"));
+
+        verifyNoInteractions(githubRepositoryService);
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenMinStarsIsNegative() throws Exception {
+
+        mockMvc.perform(get("/api/github/repositories")
+                        .param("minStars", "-10"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message")
+                        .value("Minimum stars cannot be negative"));
+
+        verifyNoInteractions(githubRepositoryService);
     }
 }

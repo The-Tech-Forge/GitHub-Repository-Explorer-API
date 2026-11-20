@@ -26,6 +26,12 @@ import static org.mockito.Mockito.*;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.springframework.data.domain.Sort;
+import org.mockito.ArgumentCaptor;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 
 @ExtendWith(MockitoExtension.class)
 class GithubRepositoryServiceTest {
@@ -220,5 +226,117 @@ class GithubRepositoryServiceTest {
                 "spring boot in:name",
                 sortType.name().toLowerCase()
         );
+    }
+
+    @Test
+    void shouldFetchRepositoriesWithFiltersAndSort() {
+        GithubRepositoryEntity entity = new GithubRepositoryEntity();
+        entity.setId(1L);
+        entity.setName("spring-boot");
+        entity.setOwnerName("spring-projects");
+        entity.setLanguage("Java");
+        entity.setStars(500);
+        entity.setForks(200);
+
+        GithubRepositoryResponse response = new GithubRepositoryResponse();
+        response.setId(1L);
+        response.setName("spring-boot");
+        response.setOwner("spring-projects");
+        response.setLanguage("Java");
+        response.setStars(500);
+        response.setForks(200);
+
+        when(githubRepositoryRepository.findByFilters(
+                eq("Java"),
+                eq(100),
+                any(Sort.class)
+        )).thenReturn(List.of(entity));
+
+        when(githubRepositoryMapper.toResponse(entity)).thenReturn(response);
+
+        List<GithubRepositoryResponse> result =
+                githubRepositoryService.getRepositories(
+                        "Java",
+                        100,
+                        RepositorySortType.FORKS
+                );
+
+        assertEquals(1, result.size());
+        assertEquals("spring-boot", result.get(0).getName());
+        assertEquals(500, result.get(0).getStars());
+
+        ArgumentCaptor<Sort> sortCaptor = ArgumentCaptor.forClass(Sort.class);
+
+        verify(githubRepositoryRepository).findByFilters(
+                eq("Java"),
+                eq(100),
+                sortCaptor.capture()
+        );
+
+        assertEquals(
+                "forks",
+                sortCaptor.getValue().getOrderFor("forks").getProperty()
+        );
+
+        verify(githubRepositoryMapper).toResponse(entity);
+    }
+
+    @Test
+    void shouldReturnEmptyListWhenNoRepositoriesMatchFilters() {
+        when(githubRepositoryRepository.findByFilters(
+                eq("Python"),
+                eq(1000),
+                any(Sort.class)
+        )).thenReturn(List.of());
+
+        List<GithubRepositoryResponse> result =
+                githubRepositoryService.getRepositories(
+                        "Python",
+                        1000,
+                        RepositorySortType.STARS
+                );
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+
+        verify(githubRepositoryRepository).findByFilters(
+                eq("Python"),
+                eq(1000),
+                any(Sort.class)
+        );
+
+        verifyNoInteractions(githubRepositoryMapper);
+    }
+
+    @ParameterizedTest
+    @EnumSource(RepositorySortType.class)
+    void shouldApplyCorrectSortingForEachSortType(RepositorySortType sortType) {
+
+        when(githubRepositoryRepository.findByFilters(
+                isNull(),
+                isNull(),
+                any(Sort.class)
+        )).thenReturn(List.of());
+
+        githubRepositoryService.getRepositories(null, null, sortType);
+
+        ArgumentCaptor<Sort> sortCaptor = ArgumentCaptor.forClass(Sort.class);
+
+        verify(githubRepositoryRepository).findByFilters(
+                isNull(),
+                isNull(),
+                sortCaptor.capture()
+        );
+
+        String expectedField = switch (sortType) {
+            case STARS -> "stars";
+            case FORKS -> "forks";
+            case UPDATED -> "lastUpdated";
+        };
+
+        Sort.Order order = sortCaptor.getValue().getOrderFor(expectedField);
+
+        assertNotNull(order);
+        assertEquals(Sort.Direction.DESC, order.getDirection());
     }
 }
